@@ -19,19 +19,15 @@ pm list packages -3 | cut -d ':' -f 2 | while read -r PKG; do
   fi
 
   APK_PATH=$(pm path "$PKG" | head -n 1 | cut -d ':' -f 2)
+  [ -z "$APK_PATH" ] && continue
 
-  if [ -z "$APK_PATH" ]; then
-    continue
-  fi
-
-  if ! unzip -l "$APK_PATH" 2>/dev/null | grep -q "com/xiaomi/mipush/"; then
-    continue
-  fi
-
-  if aapt d xmltree "$APK_PATH" AndroidManifest.xml 2>/dev/null \
-     | grep -qE '(XMPushService|PushMessageHandler|MessageHandleService)'; then
-    log -p i -t $LOG_TAG "Found MiPush SDK in: $PKG"
-    echo "$PKG" >> "$WHITELIST_FILE"
+  if unzip -l "$APK_PATH" 2>/dev/null | grep -q "com/xiaomi/mipush/"; then
+    if pm dump "$PKG" 2>/dev/null | grep -qE '(XMPushService|PushMessageHandler|MessageHandleService)'; then
+      log -p i -t $LOG_TAG "Found MiPush SDK in: $PKG"
+      echo "$PKG" >> "$WHITELIST_FILE"
+    else
+      log -p i -t $LOG_TAG "[$PKG] contains MiPush classes but no service registered (skipped)."
+    fi
   fi
 done
 
