@@ -41,33 +41,27 @@ public:
         string process_name = jstringToStdString(env, args->nice_name);
         LOGD("preAppSpecialize called for process: [%s]", process_name.c_str());
 
-        if (process_name.empty()) {
+        if (!isPushProcess(process_name)) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-            return;
-        }
-
-        // Check if the process is a likely push process
-        if (isPushProcess(process_name)) {
-            // Check if the app has MiPush SDK
-            if (hasMiPushSDK()) {
-                string app_data_dir = jstringToStdString(env, args->app_data_dir);
-                string package_name = parsePackageName(app_data_dir.c_str());
-                LOGI("Hooking MiPush process: %s for package: %s\n", package_name.c_str(), process_name.c_str());
-                Hook(api, env).hook();
-                LOGI("MiPush hook attempted for package: %s", package_name.c_str());
-            } else {
-                api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-                LOGI("MiPush SDK not found for process: %s. Unloading module.", process_name.c_str());
-            }
-        } else {
-            api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
-            LOGI("Process %s is not a push process. Unloading module.", process_name.c_str());
         }
     }
 
-    void preServerSpecialize(zygisk::ServerSpecializeArgs *args) override {
-        // Never tamper with system_server
-        api->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
+    void postAppSpecialize(const AppSpecializeArgs *args) override {
+        string process_name = jstringToStdString(env, args->nice_name);
+        LOGD("postAppSpecialize called for process: [%s]", process_name.c_str());
+
+        if (hasMiPushSDK()) {
+            string app_data_dir = jstringToStdString(env, args->app_data_dir);
+            string package_name = parsePackageName(app_data_dir.c_str());
+            LOGI("MiPush SDK found. Hooking process: %s for package: %s", process_name.c_str(), package_name.c_str());
+            Hook(api, env).hook();
+        } else {
+            LOGI("MiPush SDK not found for process: %s. Module will not hook this process.", process_name.c_str());
+        }
+    }
+
+    void preServerSpecialize(ServerSpecializeArgs *args) override {
+        api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
     }
 
 private:
@@ -76,6 +70,12 @@ private:
 
     // Check if the process name ends with a common push service suffix
     static bool isPushProcess(const string &processName) {
+        if (processName.empty()) {
+            return false;
+        }
+        if (processName.find(':') == string::npos) {
+            return true;
+        }
         if (processName.length() > 5 && processName.substr(processName.length() - 5) == ":push") {
             return true;
         }
@@ -96,6 +96,8 @@ private:
             "com/xiaomi/mipush/sdk/NotificationClickedActivity",
             "com/xiaomi/mipush/sdk/PushMessageHandler",
             "com/xiaomi/mipush/sdk/MessageHandleService",
+            "com/xiaomi/mipush/sdk/PushMessageReceiver",
+            "com/xiaomi/push/service/NetworkStatusReceiver",
         };
 
         for (const char* class_name : classes_to_check) {
