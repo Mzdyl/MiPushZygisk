@@ -34,10 +34,13 @@ public:
     void onLoad(Api *api, JNIEnv *env) override {
         this->api = api;
         this->env = env;
+        LOGD("MiPushZygisk module loaded successfully.");
     }
 
     void preAppSpecialize(AppSpecializeArgs *args) override {
         string process_name = jstringToStdString(env, args->nice_name);
+        LOGD("preAppSpecialize called for process: [%s]", process_name.c_str());
+
         if (process_name.empty()) {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
             return;
