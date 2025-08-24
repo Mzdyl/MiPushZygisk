@@ -24,8 +24,13 @@ pm list packages -3 | cut -d ':' -f 2 | while read -r PKG; do
     continue
   fi
 
-  if aapt d badging "$APK_PATH" 2>/dev/null | grep -qE 'service:[[:space:]]name=.*(XMPushService|PushMessageHandler|MessageHandleService)'; then
-    log -p i -t $LOG_TAG "Found MiPush SDK in: $PKG (Passed blacklist check)"
+  if ! unzip -l "$APK_PATH" 2>/dev/null | grep -q "com/xiaomi/mipush/"; then
+    continue
+  fi
+
+  if aapt d xmltree "$APK_PATH" AndroidManifest.xml 2>/dev/null \
+     | grep -qE '(XMPushService|PushMessageHandler|MessageHandleService)'; then
+    log -p i -t $LOG_TAG "Found MiPush SDK in: $PKG"
     echo "$PKG" >> "$WHITELIST_FILE"
   fi
 done
