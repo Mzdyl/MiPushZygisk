@@ -28,7 +28,7 @@ class MiPushZygisk : public zygisk::ModuleBase {
 public:
     void onLoad(Api *api, JNIEnv *env) override {
         this->api = api;
-        this.env = env;
+        this->env = env;
 
         if (!list_loaded) {
             loadWhitelist();
