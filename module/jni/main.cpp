@@ -28,7 +28,7 @@ class MiPushZygisk : public zygisk::ModuleBase {
 public:
     void onLoad(Api *api, JNIEnv *env) override {
         this->api = api;
-        this->env = env;
+        this.env = env;
 
         if (!list_loaded) {
             loadWhitelist();
@@ -36,27 +36,21 @@ public:
         }
     }
 
-    void preAppSpecialize(AppSpecializeArgs *args) override {
-
-    }
-
     void postAppSpecialize(const AppSpecializeArgs *args) override {
-        string app_data_dir = jstringToStdString(env, args->app_data_dir);
-        if (app_data_dir.empty()) {
+        string package_name = parsePackageName(jstringToStdString(env, args->app_data_dir).c_str());
+        if (package_name.empty() || target_packages.find(package_name) == target_packages.end()) {
             return;
         }
 
-        string package_name = parsePackageName(app_data_dir.c_str());
-        if (package_name.empty()) {
+        string process_name = jstringToStdString(env, args->nice_name);
+        if (!isTargetProcess(process_name)) {
+            LOGD("Process [%s] is not a target process type, skipping hook.", process_name.c_str());
             return;
         }
 
-        if (target_packages.count(package_name)) {
-            string process_name = jstringToStdString(env, args->nice_name);
-            LOGI("Package [%s] is in whitelist. Applying device hooks to process [%s].",
-                 package_name.c_str(), process_name.c_str());
-            Hook(api, env).hook();
-        }
+        LOGI("Package [%s] is whitelisted and process [%s] is a target type. Applying hooks.",
+             package_name.c_str(), process_name.c_str());
+        Hook(api, env).hook();
     }
 
     void preServerSpecialize(ServerSpecializeArgs *args) override {
@@ -65,7 +59,23 @@ public:
 
 private:
     Api *api;
-    JNIEnv *env; 
+    JNIEnv *env;
+
+    static bool isTargetProcess(const string &processName) {
+        if (processName.empty()) {
+            return false;
+        }
+        if (processName.find(':') == string::npos) {
+            return true;
+        }
+        if (processName.length() > 5 && processName.substr(processName.length() - 5) == ":push") {
+            return true;
+        }
+        if (processName.length() > 12 && processName.substr(processName.length() - 12) == ":pushservice") {
+            return true;
+        }
+        return false;
+    }
 
     void loadWhitelist() {
         std::ifstream file(WHITELIST_PATH);
