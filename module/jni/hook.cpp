@@ -35,21 +35,24 @@ jstring my_native_get(JNIEnv *env, jclass clazz, jstring keyJ, jstring defJ) {
 void hookBuild(JNIEnv *env) {
     LOGD("hook Build\n");
     jclass build_class = env->FindClass("android/os/Build");
-    jstring new_brand = env->NewStringUTF("Xiaomi");
-    jstring new_manufacturer = env->NewStringUTF("Xiaomi");
+    jstring new_xiaomi_str = env->NewStringUTF("Xiaomi");
+
+    if (new_xiaomi_str == nullptr) {
+        LOGE("Failed to create Xiaomi string");
+        return;
+    }
 
     jfieldID brand_id = env->GetStaticFieldID(build_class, "BRAND", "Ljava/lang/String;");
     if (brand_id != nullptr) {
-        env->SetStaticObjectField(build_class, brand_id, new_brand);
+        env->SetStaticObjectField(build_class, brand_id, new_xiaomi_str);
     }
 
     jfieldID manufacturer_id = env->GetStaticFieldID(build_class, "MANUFACTURER", "Ljava/lang/String;");
     if (manufacturer_id != nullptr) {
-        env->SetStaticObjectField(build_class, manufacturer_id, new_manufacturer);
+        env->SetStaticObjectField(build_class, manufacturer_id, new_xiaomi_str);
     }
 
-    env->DeleteLocalRef(new_brand);
-    env->DeleteLocalRef(new_manufacturer);
+    env->DeleteLocalRef(new_xiaomi_str);
 
     LOGD("hook Build done");
 }
