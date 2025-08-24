@@ -2,6 +2,7 @@
 #include "logging.h"
 #include <string>
 #include <unordered_map>
+#include <fstream> // Added for file operations
 
 using namespace std;
 
@@ -73,6 +74,16 @@ void hookSystemProperties(JNIEnv *env, zygisk::Api *api) {
 }
 
 void Hook::hook() {
+    // Create a heartbeat file to indicate module activity
+    ofstream outfile("/data/local/tmp/mipush_zygisk_active.txt");
+    if (outfile.is_open()) {
+        outfile << "MiPush Zygisk module active!" << endl;
+        outfile.close();
+        LOGI("Created heartbeat file: /data/local/tmp/mipush_zygisk_active.txt");
+    } else {
+        LOGE("Failed to create heartbeat file: /data/local/tmp/mipush_zygisk_active.txt");
+    }
+
     hookBuild(env);
     hookSystemProperties(env, api);
 }

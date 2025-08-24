@@ -54,11 +54,14 @@ public:
                 string package_name = parsePackageName(app_data_dir.c_str());
                 LOGI("Hooking MiPush process: %s for package: %s\n", package_name.c_str(), process_name.c_str());
                 Hook(api, env).hook();
+                LOGI("MiPush hook attempted for package: %s", package_name.c_str());
             } else {
                 api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
+                LOGI("MiPush SDK not found for process: %s. Unloading module.", process_name.c_str());
             }
         } else {
             api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
+            LOGI("Process %s is not a push process. Unloading module.", process_name.c_str());
         }
     }
 
