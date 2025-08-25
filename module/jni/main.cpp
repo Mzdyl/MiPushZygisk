@@ -44,7 +44,6 @@ public:
 
         string process_name = jstringToStdString(env, args->nice_name);
         if (!isTargetProcess(process_name)) {
-            LOGD("Process [%s] is not a target process type, skipping hook.", process_name.c_str());
             return;
         }
 
@@ -97,7 +96,6 @@ private:
             }
         }
         file.close();
-        LOGI("Loaded %d packages into the whitelist.", count);
     }
 
     static string parsePackageName(const char *app_data_dir) {
